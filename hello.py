@@ -15,14 +15,20 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
 
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.',1)[1].lower() in ALLOWED_EXTENSIONS
+    extension = ''
+    if '.' in filename:
+        extension = filename.rsplit('.',1)[1].lower()
+    else:
+        return (False,extension)
+    return (extension in ALLOWED_EXTENSIONS, extension)
+
 
 @app.route('/', methods=['GET','POST'])
 def upload_file():
     if request.method == 'POST':
         username = request.form['username']
         usertel = request.form['usertel']
-        if 'file' not in request.files and 'file2' not in request.files:
+        if 'file' not in request.files or 'file2' not in request.files:
             flash('No file part')
             return redirect(request.url)
         file = request.files['file']
@@ -30,9 +36,11 @@ def upload_file():
         if file.filename == '' or file2.filename == '':
             flash('No selected file')
             return redirect(request.url)
-        if file and file2 and allowed_file(file.filename) and allowed_file(file2.filename):
-            filename = secure_filename(file.filename)
-            file2name = secure_filename(file2.filename)
+        result = allowed_file(file.filename)
+        result2 = allowed_file(file2.filename)
+        if file and file2 and result[0] and result2[0]:
+            filename = username + '_' + usertel + '健康码.' + result[1]
+            file2name = username + '_' + usertel + '行程码.' + result2[1]
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             file2.save(os.path.join(app.config['UPLOAD_FOLDER'],file2name))
             return redirect(url_for('uploaded_file',filename=filename))
@@ -53,6 +61,9 @@ def upload_file():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+@app.route('/download/')
+def download_imgs():
+    return "下载"
 
 
 @app.route('/')
