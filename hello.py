@@ -1,8 +1,10 @@
 
 import os
 from flask import Flask, flash, request, redirect, url_for, render_template
+from flask.helpers import send_file
 from werkzeug.utils import secure_filename
 from flask import send_from_directory
+import zipfile
 
 
 UPLOAD_FOLDER = './uploadsImgs'
@@ -57,13 +59,27 @@ def upload_file():
     </form>
     '''
 
+
+def zip_imgs():
+    zf = zipfile.ZipFile('./imgs.zip','w',zipfile.ZIP_DEFLATED)
+    files = os.listdir(UPLOAD_FOLDER)
+    for tmp in files:
+        zf.write(UPLOAD_FOLDER+'/'+tmp)
+    zf.close()
+    
+
+
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 @app.route('/download/')
 def download_imgs():
-    return "下载"
+    imgpath = './imgs.zip'
+    if os.path.exists(imgpath):
+        os.remove()
+    zip_imgs()
+    return send_file(imgpath)
 
 
 @app.route('/')
